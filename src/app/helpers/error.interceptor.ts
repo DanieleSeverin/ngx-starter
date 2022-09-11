@@ -21,7 +21,7 @@ export class ErrorInterceptor implements HttpInterceptor {
 
             console.error(err);
               
-            if (err.status === 401 && this.userService.User) {
+            if (err.status === 401 && this.userService.user) {
                 return this.handleError401(request, next);
             }
             return throwError(() => err);
@@ -35,7 +35,7 @@ export class ErrorInterceptor implements HttpInterceptor {
         this.isRefreshing = true;
         this.refreshTokenSubject.next(null);
 
-        const RefreshToken = this.userService.RefreshToken;
+        const RefreshToken = this.userService.refreshToken;
 
         let hasRefreshed = false;
         
@@ -43,9 +43,9 @@ export class ErrorInterceptor implements HttpInterceptor {
           return this.userService.refresh().pipe(
             switchMap((token: RefreshResponse) => {
               this.isRefreshing = false;
-              this.refreshTokenSubject.next(token.AccessToken);
+              this.refreshTokenSubject.next(token.accessToken);
               hasRefreshed = true;
-              return next.handle(this.RepeatRequest(request, token.AccessToken));
+              return next.handle(this.RepeatRequest(request, token.accessToken));
             }),
             catchError((err) => {
               this.isRefreshing = false;

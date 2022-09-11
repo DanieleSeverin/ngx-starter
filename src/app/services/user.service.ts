@@ -10,9 +10,9 @@ import { tap } from 'rxjs/operators';
 })
 export class UserService {
 
-  public User: User | null = null;
-  public AccessToken = '';
-  public RefreshToken = '';
+  public user: User | null = null;
+  public accessToken = '';
+  public refreshToken = '';
 
   constructor(private router: Router,
     private http: HttpClient,
@@ -23,11 +23,25 @@ export class UserService {
     if (userTmp)
     {
     const temp = JSON.parse(userTmp);
-    this.User = temp.User;
-    this.AccessToken = temp.AccessToken;
-    this.RefreshToken = temp.RefreshToken;
-    console.log("User from localStorage: ", this.User);
+    this.user = temp.User;
+    this.accessToken = temp.AccessToken;
+    this.refreshToken = temp.RefreshToken;
+    console.log("User from localStorage: ", this.user);
     }
+  }
+
+  signup(user :AuthRequest){
+    return this.http.post<AuthResponse>(`${environment.apiUrl}/signup`, user)
+      .pipe(
+        tap( res => {
+            // store user details and jwt token in local storage to keep user logged in between page refreshes
+            console.log("Response from signup: ", res);
+            this.user = res.user;
+            this.accessToken = res.accessToken;
+            this.refreshToken = res.refreshToken;
+            localStorage.setItem('currentUser', JSON.stringify(res));
+        })
+    );
   }
 
   login(body :AuthRequest) {
@@ -44,41 +58,41 @@ export class UserService {
             tap( res => {
                 // store user details and jwt token in local storage to keep user logged in between page refreshes
                 console.log("Response from login: ", res);
-                this.User = res.User;
-                this.AccessToken = res.AccessToken;
-                this.RefreshToken = res.RefreshToken;
+                this.user = res.user;
+                this.accessToken = res.accessToken;
+                this.refreshToken = res.refreshToken;
                 localStorage.setItem('currentUser', JSON.stringify(res));
             })
         );
-}
+  }
 
-refresh(){
-    const body :RefreshRequest = {"RefreshToken" : this.RefreshToken};
-    const url = `${environment.apiUrl}/Authenticate/Refresh`;
+  refresh(){
+      const body :RefreshRequest = {"refreshToken" : this.refreshToken};
+      const url = `${environment.apiUrl}/Authenticate/Refresh`;
 
-    return this.http.post<RefreshResponse>(url, body).pipe(
-        tap(
-            res => {
-                this.AccessToken = res.AccessToken;
-                localStorage.setItem('currentUser', JSON.stringify(this.getAuthResponse()));
-            }
-        )
-    )
-}
+      return this.http.post<RefreshResponse>(url, body).pipe(
+          tap(
+              res => {
+                  this.accessToken = res.accessToken;
+                  localStorage.setItem('currentUser', JSON.stringify(this.getAuthResponse()));
+              }
+          )
+      )
+  }
 
   logout() {
     localStorage.removeItem('currentUser');
-    this.User = null;
-    this.AccessToken = '';
-    this.RefreshToken = '';
+    this.user = null;
+    this.accessToken = '';
+    this.refreshToken = '';
     this.router.navigate(['/login']);
   }
 
   getAuthResponse() :AuthResponse {
     return {
-      User: this.User!,
-      AccessToken: this.AccessToken,
-      RefreshToken: this.RefreshToken
+      user: this.user!,
+      accessToken: this.accessToken,
+      refreshToken: this.refreshToken
     }
   }
 
